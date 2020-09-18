@@ -1,7 +1,6 @@
-# from pyDes import des, PAD_PKCS5, ECB
-# from rsa import common, transform, core
+# coding=UTF-8
 import sys
-sys.path.append(r'./')
+# sys.path.append(r'./')
 from myutils import *
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
@@ -14,17 +13,9 @@ import base64,os,rsa,hashlib,json,requests,threading
 serverRSAPublicKey=""
 clientRSAPublicKey=""
 clientRSAPrivateKey=""
-url=""
 
 
-@dispatcher.add_method
-def RetrieveFile(filename,_url):
-    global url
-    url=_url
-    print("serverUrl:%s\nfilename:%s\n"%(url,filename))
-    th=threading.Thread(target=downloadFile,args=(filename,))
-    th.start()
-    return {"status":"success"}
+
 
 
     
@@ -35,8 +26,9 @@ def application(request):
     return Response(response.json, mimetype='application/json')
     
 
-def downloadFile(filename):
-    global serverRSAPublicKey,serverRSAPrivateKey,clientRSAPublicKey,url
+def downloadFile(filename,url):
+    global serverRSAPublicKey,serverRSAPrivateKey,clientRSAPublicKey
+
 
     (clientRSAPublicKey,clientRSAPrivateKey)=rsa.newkeys(512)
     print("client 公钥:\n%s\n私钥:\n:%s" % (clientRSAPublicKey, clientRSAPrivateKey))
@@ -59,10 +51,12 @@ def downloadFile(filename):
     else:
         print("Correct md5 code.")
     
-    f=open("out.txt","wb")
+    f=open(filename,"wb")
     f.write(content)
     f.close()
     print("download done.")
+
+    return True
 
 
 
@@ -70,7 +64,7 @@ def client():
     global serverRSAPublicKey,serverRSAPrivateKey,clientRSAPublicKey,url
     (clientRSAPublicKey,clientRSAPrivateKey)=rsa.newkeys(512)
     print("client 公钥:\n%s\n私钥:\n:%s" % (clientRSAPublicKey, clientRSAPrivateKey))
-    run_simple('localhost', 4001, application)
+    run_simple('localhost', 4008, application)
 
 def main():
     print("client")

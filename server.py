@@ -1,17 +1,18 @@
-
+# coding=UTF-8
 
 # 监听
 
 # 请求到来
 
 import sys
-sys.path.append(r'./')
+# sys.path.append(r'./')
 from myutils import *
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 from jsonrpc import JSONRPCResponseManager, dispatcher
+from client import downloadFile
 import base64,os,hashlib,rsa,threading
 
 
@@ -23,6 +24,12 @@ serverUrl="http://localhost:4000/jsonrpc"
 toSendFilename=""
 #
 
+@dispatcher.add_method
+def RetrieveFile(filename,url):
+    print("serverUrl:%s\nfilename:%s\n"%(url,filename))
+    th=threading.Thread(target=downloadFile,args=(filename,url,))
+    th.start()
+    return {"status":"success"}
 
 @dispatcher.add_method
 def foobar(**kwargs):
@@ -92,30 +99,35 @@ def application(request):
     return Response(response.json, mimetype='application/json')
 
 
-def sendFile(clientUrl,filename):
+def sendFile(filename,targetUrl):
     global toSendFilename
     toSendFilename=filename
-    res=RPCCall(clientUrl,"RetrieveFile",{"filename":filename,"_url":serverUrl})
+    res=RPCCall(targetUrl,"RetrieveFile",{"filename":filename,"url":serverUrl})
     if res["status"]!="success":
         print("Send File failed.")
 
 #只要是发文件就要开server,被动发不用send，主动发需要sendFile
-def server():
+
+#server是非阻塞的
+def server(port):
+    global serverUrl
+    serverUrl="http://localhost:%d/jsonrpc"%port
     # 生成server rsa public private key
     global serverRSAPublicKey,serverRSAPrivateKey
     (serverRSAPublicKey, serverRSAPrivateKey) = rsa.newkeys(512)
     print("server 公钥:\n%s\n私钥:\n:%s" %
           (serverRSAPublicKey, serverRSAPrivateKey))
 
-    th=threading.Thread(target=run_simple,args=('localhost', 4000, application))
+    th=threading.Thread(target=run_simple,args=('localhost', port, application))
     th.start()
 
-    #sendFile("http://localhost:4001/jsonrpc","test.txt")
+    #sendFile("test.txt","http://localhost:4001/jsonrpc")
 
 
 
 if __name__ == '__main__':
-    server()
+    print()
+    # server()
     # run_simple('localhost', 4000, application)
 
 

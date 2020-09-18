@@ -1,3 +1,4 @@
+# coding=UTF-8
 from pyDes import des, PAD_PKCS5, ECB
 from rsa import common, transform, core
 import base64,os,rsa,hashlib,requests
